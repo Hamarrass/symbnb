@@ -3,9 +3,13 @@
 namespace App\Controller;
 
 use App\Entity\Ad;
+use App\Form\AdType;
 use App\Repository\AdRepository;
+use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 class AdController extends AbstractController
@@ -17,12 +21,51 @@ class AdController extends AbstractController
     { 
         // $repo = $this->getDoctrine()->getRepository(Ad::class);
         $ads  = $repo->findAll();
-
-
         return $this->render('ad/index.html.twig', [
             'ads' => $ads,
         ]);
     }
+
+
+    /**
+     * Permet de créer une annonce
+     *
+     * @Route("/ads/new",name="ads_create")
+     *
+     * @return Response
+     */
+    
+    Public function create(Request $req){
+        $ad = new Ad();
+        $form = $this->createForm(AdType::class,$ad); 
+        $form->handleRequest($req);
+        
+        if($form->isSubmitted() && $form->isValid()){
+            $manager =$this->getDoctrine()->getManager();
+            $manager->persist($ad);
+            $manager->flush();
+            
+            $this->addFlash(
+                'success',
+                "L'annonce <strong>{$ad->getTitle()}</strong> a bien été enregistrée !"
+                );
+
+            return $this->redirectToRoute('ads_show',[
+                'slug'=>$ad->getSlug()
+            ]);
+
+        }
+
+  
+
+        return $this->render('ad/new.html.twig',[
+            'form' => $form->createView()
+        ]); 
+    }
+
+
+
+
 
     /**
      * Permet d'afficher une seule annonce
@@ -42,4 +85,7 @@ class AdController extends AbstractController
         ]) ;
 
     } 
+
+
+
 }
