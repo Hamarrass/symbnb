@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Ad;
 use App\Form\AdType;
+use App\Entity\Image;
 use App\Repository\AdRepository;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\HttpFoundation\Request;
@@ -37,11 +38,17 @@ class AdController extends AbstractController
     
     Public function create(Request $req){
         $ad = new Ad();
+    
         $form = $this->createForm(AdType::class,$ad); 
         $form->handleRequest($req);
         
         if($form->isSubmitted() && $form->isValid()){
             $manager =$this->getDoctrine()->getManager();
+            foreach ($ad->getImages() as $image) {
+                $image->setAd($ad);
+               $manager->persist($image);
+            }
+
             $manager->persist($ad);
             $manager->flush();
             
@@ -64,8 +71,47 @@ class AdController extends AbstractController
     }
 
 
+     /**
+      * Permet d'afficher le formulaire d'édition
+      *
+      * @Route("/ads/{slug}/edit",name="ads_edit")
+      *
+      * @return Response 
+      */
 
+      public function edit(Ad $ad , Request $req){
 
+        $form = $this->createForm(AdType::class,$ad); 
+        $form->handleRequest($req);
+
+        if($form->isSubmitted() && $form->isValid()){
+            $manager =$this->getDoctrine()->getManager();
+            foreach ($ad->getImages() as $image) {
+                $image->setAd($ad);
+               $manager->persist($image);
+            }
+
+            $manager->persist($ad);
+            $manager->flush();
+            
+            $this->addFlash(
+                'success',
+                "les Modifications de l'annonce  <strong>{$ad->getTitle()}</strong> ont  bien été enregistrée !"
+                );
+
+            return $this->redirectToRoute('ads_show',[
+                'slug'=>$ad->getSlug()
+            ]);
+
+        }
+
+          return $this->render('ad/edit.html.twig',[
+              'form' => $form->createView(),
+              'ad'=>$ad
+            ]);
+      }
+
+   
 
     /**
      * Permet d'afficher une seule annonce
